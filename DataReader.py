@@ -27,7 +27,7 @@ def load_data(data_dir):
 	import pickle
 	y_train = []
 	x_train = []
-	for batch in range(1, 6):
+	for batch in range(1, 2):
 		with open(data_dir + '/data_batch_'+str(batch), 'rb') as fo:
 			dict = pickle.load(fo, encoding='bytes')
 		y_train.extend(dict[b'labels'])
@@ -49,6 +49,8 @@ def load_data(data_dir):
 	print(y_train.shape)
 	print(x_test.shape)
 	print(y_test.shape)
+	np.set_printoptions(threshold=np.inf)
+	print(y_train)
 	
 	### END CODE HERE
 

@@ -55,11 +55,15 @@ class Cifar(object):
 
 			### YOUR CODE HERE
 			# train_op
-			self.train_op =optimizer.minimize(self.losses)
+			update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+			with tf.control_dependencies(update_ops):
+				self.train_op = optimizer.minimize(self.losses)
 
 			### END CODE HERE
 
 			print('---Setup the Saver for saving models...')
+			print(tf.global_variables())
+
 			self.saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=0)
 
 		else:
@@ -154,6 +158,8 @@ class Cifar(object):
 				### END CODE HERE
 
 			preds = np.array(preds).reshape(y.shape)
+			np.set_printoptions(threshold=np.inf)
+			print(preds)
 			print('Test accuracy: {:.4f}'.format(np.sum(preds==y)/y.shape[0]))
 
 

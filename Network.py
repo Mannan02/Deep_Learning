@@ -71,7 +71,7 @@ class ResNet(object):
 		"""Perform batch normalization then relu."""
 
 		### YOUR CODE HERE
-		outputs = tf.layers.batch_normalization(inputs,axis=3,training=training)
+		outputs = tf.layers.batch_normalization(inputs, training=training, axis=3)
 		outputs = tf.nn.relu(outputs)
 		### END CODE HERE
 
@@ -91,7 +91,7 @@ class ResNet(object):
 
 		### YOUR CODE HERE
 		# initial conv1
-		outputs = tf.layers.conv2d(inputs,filters=self.first_num_filters,kernel_size=3,padding="SAME" ,name="Start",strides=1, use_bias=False)
+		outputs = tf.layers.conv2d(inputs, filters=self.first_num_filters,kernel_size=3, padding="SAME" ,strides=1, use_bias=False)
 
 		### END CODE HERE
 
@@ -123,16 +123,18 @@ class ResNet(object):
 			inputs = self._batch_norm_relu(inputs, training)
 
 		### YOUR CODE HERE
-		import numpy as np
 		print(inputs.shape)
-		outputs = tf.layers.average_pooling2d(inputs, pool_size=(8, 8), strides=8, padding='SAME', name='pool')
+		outputs = tf.reduce_mean(inputs, axis=[1,2])
+		outputs = tf.layers.average_pooling2d(inputs, pool_size=(8, 8), strides=8, padding='SAME')
 		outputs = tf.layers.flatten(outputs)
 		print(outputs.shape)
+		# print(self.num_classes)
 		dense_layer = tf.layers.Dense(units=self.num_classes, activation=tf.nn.softmax)
+		print(dense_layer.compute_output_shape(outputs.shape))
 		dense_layer.build(outputs.shape)
 		outputs = dense_layer.call(outputs)
-		# outputs = tf.layers.dense(inputs=outputs,units=self.num_classes,activation=tf.nn.softmax)
-
+		# outputs = tf.layers.dense(inputs=outputs,units=self.num_classes)
+		print(outputs.shape)
 		### END CODE HERE
 
 		return outputs
@@ -196,16 +198,16 @@ class ResNet(object):
 		if projection_shortcut is not None:
 			### YOUR CODE HERE
 			shortcut = projection_shortcut(shortcut)
-			shortcut = tf.layers.batch_normalization(shortcut, training=training)
+			shortcut = tf.layers.batch_normalization(shortcut, training=training, axis=3)
 			### END CODE HERE
 
 		### YOUR CODE HERE
 		inputs = tf.layers.conv2d(inputs, filters=filters, kernel_size=3, strides=strides, padding="SAME", use_bias=False)
-		inputs = tf.layers.batch_normalization(inputs, axis=3, training=training)
+		inputs = tf.layers.batch_normalization(inputs, training=training, axis=3)
 		inputs = tf.nn.relu(inputs)
 		# inputs = self._batch_norm_relu(inputs,training)
 		inputs = tf.layers.conv2d(inputs, filters=filters, kernel_size=3, strides=1, padding="SAME", use_bias=False)
-		inputs = tf.layers.batch_normalization(inputs, axis=3, training=training)
+		inputs = tf.layers.batch_normalization(inputs, training=training, axis=3)
 		outputs = inputs + shortcut
 		outputs = tf.nn.relu(outputs)
 		### END CODE HERE
@@ -238,13 +240,15 @@ class ResNet(object):
 
 		for i in range(0, 3):
 			kernel_size = 1
+			strides_curr = 1
 			if i == 1:
 				kernel_size = 3
+				strides_curr = strides
 			if i == 2:
 				filters *= 4
-			inputs = tf.layers.batch_normalization(inputs, axis=3, training=training)
+			inputs = tf.layers.batch_normalization(inputs, training=training, axis=3)
 			inputs = tf.nn.relu(inputs)
-			inputs = tf.layers.conv2d(inputs, filters=filters, kernel_size=kernel_size, strides=strides, padding="SAME", use_bias=False)
+			inputs = tf.layers.conv2d(inputs, filters=filters, kernel_size=kernel_size, strides=strides_curr, padding="SAME", use_bias=False)
 
 		outputs = inputs + shortcut
 

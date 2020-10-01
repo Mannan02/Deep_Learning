@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 """This script implements the functions for data augmentation
 and preprocessing.
 """
