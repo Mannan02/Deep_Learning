@@ -43,9 +43,9 @@ class Cifar(object):
 			# cross entropy
 			crossEntropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=logits)
 			crossEntropyLoss = tf.reduce_mean(crossEntropy)
-			# final loss function
 
-			self.losses = l2_loss + crossEntropyLoss
+			# final loss function
+			self.losses = crossEntropyLoss + l2_loss
 
 			### END CODE HERE
 
@@ -62,8 +62,6 @@ class Cifar(object):
 			### END CODE HERE
 
 			print('---Setup the Saver for saving models...')
-			print(tf.global_variables())
-
 			self.saver = tf.train.Saver(var_list=tf.global_variables(), max_to_keep=0)
 
 		else:
@@ -106,17 +104,16 @@ class Cifar(object):
 			elif epoch > 50:
 				learning_rate /= 5
 
-
 			### END CODE HERE
 
 			loss_value = []
 			for i in range(num_batches):
 				### YOUR CODE HERE
 				# Construct the current batch.
-				# Don't forget to use "parse_record" to perform data preprocessing
-				x_batch = np.array([parse_record(record, True) for record in curr_x_train[i*self.conf.batch_size:(i+1)*self.conf.batch_size]])
-				y_batch = np.array(curr_y_train[i*self.conf.batch_size:(i+1)*self.conf.batch_size])
-				# print(x_batch.shape)
+				# Don't forget to use "parse_record" to perform data preprocessing.		
+				x_batch = np.array([parse_record(record, True) for record in
+									curr_x_train[i * self.conf.batch_size:(i + 1) * self.conf.batch_size]])
+				y_batch = np.array(curr_y_train[i * self.conf.batch_size:(i + 1) * self.conf.batch_size])
 				### END CODE HERE
 				# Run
 				feed_dict = {self.inputs: x_batch,
@@ -150,11 +147,10 @@ class Cifar(object):
 			preds = []
 			for i in tqdm(range(x.shape[0])):
 				### YOUR CODE HERE
-
-				x_val = parse_record(x[i], False).reshape((1,32,32,3))
+				x_val = parse_record(x[i], False).reshape((1, 32, 32, 3))
 				feed_dict = {self.inputs: x_val}
 				preds.append(self.sess.run(self.preds, feed_dict=feed_dict))
-
+				
 				### END CODE HERE
 
 			preds = np.array(preds).reshape(y.shape)

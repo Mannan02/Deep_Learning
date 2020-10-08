@@ -1,5 +1,5 @@
 import tensorflow as tf
-from Model import Cifar
+from Model_Old import Cifar
 from ImageUtils import parse_record
 from DataReader import load_data, train_valid_split
 import os
@@ -9,7 +9,7 @@ def configure():
 
 	### YOUR CODE HERE
 	flags.DEFINE_integer('resnet_version', 1, 'the version of ResNet')
-	flags.DEFINE_integer('resnet_size', 1, 'n: the size of ResNet-(6n+2) v1 or ResNet-(9n+2) v2')
+	flags.DEFINE_integer('resnet_size', 5, 'n: the size of ResNet-(6n+2) v1 or ResNet-(9n+2) v2')
 	flags.DEFINE_integer('batch_size', 128, 'training batch size')
 	flags.DEFINE_integer('num_classes', 10, 'number of classes')
 	flags.DEFINE_integer('save_interval', 1, 'save the checkpoint when epoch MOD save_interval == 0')
@@ -36,10 +36,18 @@ def main(_):
 
 	### YOUR CODE HERE
 	# First step: use the train_new set and the valid set to choose hyperparameters.
-	model.train(x_train_new, y_train_new, 1)
-	# sess_test = tf.Session()
-	# model_test = Cifar(sess_test)
-	model.test_or_validate(x_valid, y_valid, [1])
+	def del_all_flags(FLAGS):
+		flags_dict = FLAGS._flags()
+		keys_list = [keys for keys in flags_dict]
+		for keys in keys_list:
+			FLAGS.__delattr__(keys)
+
+
+	# model.train(x_train_new, y_train_new, 3)
+	sess_test = tf.Session()
+	del_all_flags(tf.flags.FLAGS)
+	model_test = Cifar(sess_test, configure())
+	model_test.test_or_validate(x_valid, y_valid, [1, 2, 3])
 
 	# Second step: with hyperparameters determined in the first run, re-train
 	# your model on the original train set.

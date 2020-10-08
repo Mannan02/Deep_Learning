@@ -5,7 +5,7 @@ import tensorflow as tf
 
 class ResNet(object):
 
-	def __init__(self, resnet_version, resnet_size, num_classes,
+	def __init__(self, resnet_version, resnet_size, num_classes, 
 					first_num_filters):
 		"""Define hyperparameters.
 
@@ -47,7 +47,7 @@ class ResNet(object):
 		Returns:
 			A logits Tensor of shape [<batch_size>, self.num_classes].
 		"""
-
+		
 		outputs = self._start_layer(inputs, training)
 
 		if self.resnet_version == 1:
@@ -71,7 +71,10 @@ class ResNet(object):
 		"""Perform batch normalization then relu."""
 
 		### YOUR CODE HERE
-		outputs = tf.layers.batch_normalization(inputs, training=training, axis=3)
+		# batchNormLayer = tf.layers.BatchNormalization(trainable=training)
+		# batchNormLayer.build(inputs.shape)
+		# outputs = batchNormLayer.call(inputs, training=training)
+		outputs = tf.layers.batch_normalization(inputs, training=training)
 		outputs = tf.nn.relu(outputs)
 		### END CODE HERE
 
@@ -88,10 +91,12 @@ class ResNet(object):
 		Returns:
 			outputs: A Tensor of shape [<batch_size>, 32, 32, self.first_num_filters].
 		"""
-
+		
 		### YOUR CODE HERE
 		# initial conv1
-		outputs = tf.layers.conv2d(inputs, filters=self.first_num_filters,kernel_size=3, padding="SAME" ,strides=1, use_bias=False)
+		convLayer = tf.layers.Conv2D(filters=self.first_num_filters, kernel_size=3, padding="SAME", use_bias=False, trainable=training, strides=1)
+		convLayer.build(inputs.shape)
+		outputs = convLayer.call(inputs)
 
 		### END CODE HERE
 
@@ -99,7 +104,6 @@ class ResNet(object):
 		# for the initial conv1 because the first block unit will perform these
 		# for both the shortcut and non-shortcut paths as part of the first
 		# block's projection.
-
 		if self.resnet_version == 1:
 			outputs = self._batch_norm_relu(outputs, training)
 
@@ -123,18 +127,15 @@ class ResNet(object):
 			inputs = self._batch_norm_relu(inputs, training)
 
 		### YOUR CODE HERE
-		print(inputs.shape)
-		outputs = tf.reduce_mean(inputs, axis=[1,2])
-		outputs = tf.layers.average_pooling2d(inputs, pool_size=(8, 8), strides=8, padding='SAME')
+		avgLayer = tf.layers.AveragePooling2D(pool_size=(8,8), strides=8, padding="SAME", trainable=training)
+		avgLayer.build(inputs.shape)
+		outputs = avgLayer.call(inputs)
 		outputs = tf.layers.flatten(outputs)
-		print(outputs.shape)
-		# print(self.num_classes)
-		dense_layer = tf.layers.Dense(units=self.num_classes, activation=tf.nn.softmax)
-		print(dense_layer.compute_output_shape(outputs.shape))
-		dense_layer.build(outputs.shape)
-		outputs = dense_layer.call(outputs)
-		# outputs = tf.layers.dense(inputs=outputs,units=self.num_classes)
-		print(outputs.shape)
+
+		denseLayer = tf.layers.Dense(self.num_classes, activation=tf.nn.softmax, trainable=training)
+		denseLayer.build(outputs.shape)
+		outputs = denseLayer.call(outputs)
+
 		### END CODE HERE
 
 		return outputs
@@ -160,15 +161,17 @@ class ResNet(object):
 
 		def projection_shortcut(inputs):
 			### YOUR CODE HERE
-			return tf.layers.conv2d(inputs, kernel_size=1, filters=filters_out, strides=strides, use_bias=False)
-
+			convLayer = tf.layers.Conv2D(filters=filters_out, kernel_size=1, padding="SAME", use_bias=False,
+										 trainable=training, strides=strides)
+			convLayer.build(inputs.shape)
+			return convLayer.call(inputs)
 			### END CODE HERE
 
 		### YOUR CODE HERE
 		# Only the first block per stack_layer uses projection_shortcut
 		outputs = block_fn(inputs, filters, training, projection_shortcut, strides)
 
-		for i in range(self.resnet_size-1):
+		for i in range(1, self.resnet_size):
 			outputs = block_fn(outputs, filters, training, None, 1)
 
 		### END CODE HERE
@@ -197,17 +200,33 @@ class ResNet(object):
 
 		if projection_shortcut is not None:
 			### YOUR CODE HERE
+
 			shortcut = projection_shortcut(shortcut)
-			shortcut = tf.layers.batch_normalization(shortcut, training=training, axis=3)
+			# batchNormLayer = tf.layers.BatchNormalization(trainable=training)
+			# batchNormLayer.build(shortcut.shape)
+			# shortcut = batchNormLayer.call(shortcut, training=training)
+			shortcut = tf.layers.batch_normalization(shortcut, training=training)
+
 			### END CODE HERE
 
 		### YOUR CODE HERE
-		inputs = tf.layers.conv2d(inputs, filters=filters, kernel_size=3, strides=strides, padding="SAME", use_bias=False)
-		inputs = tf.layers.batch_normalization(inputs, training=training, axis=3)
-		inputs = tf.nn.relu(inputs)
-		# inputs = self._batch_norm_relu(inputs,training)
-		inputs = tf.layers.conv2d(inputs, filters=filters, kernel_size=3, strides=1, padding="SAME", use_bias=False)
-		inputs = tf.layers.batch_normalization(inputs, training=training, axis=3)
+		print(inputs.shape)
+		convLayer1 = tf.layers.Conv2D(filters=filters, kernel_size=3, padding="SAME", use_bias=False,
+									 trainable=training, strides = strides)
+		convLayer1.build(inputs.shape)
+		inputs = convLayer1.call(inputs)
+		inputs = self._batch_norm_relu(inputs, training)
+		print(inputs.shape)
+		convLayer2 = tf.layers.Conv2D(filters=filters, kernel_size=3, padding="SAME", use_bias=False,
+									  trainable=training, strides = 1)
+		convLayer2.build(inputs.shape)
+		inputs = convLayer2.call(inputs)
+
+		# batchNormLayer = tf.layers.BatchNormalization(trainable=training)
+		# batchNormLayer.build(inputs.shape)
+		# inputs = batchNormLayer.call(inputs, training=training)
+		inputs = tf.layers.batch_normalization(inputs, training=training)
+
 		outputs = inputs + shortcut
 		outputs = tf.nn.relu(outputs)
 		### END CODE HERE
@@ -246,12 +265,13 @@ class ResNet(object):
 				strides_curr = strides
 			if i == 2:
 				filters *= 4
-			inputs = tf.layers.batch_normalization(inputs, training=training, axis=3)
-			inputs = tf.nn.relu(inputs)
-			inputs = tf.layers.conv2d(inputs, filters=filters, kernel_size=kernel_size, strides=strides_curr, padding="SAME", use_bias=False)
+			inputs = self._batch_norm_relu(inputs, training)
+			convLayer = tf.layers.Conv2D(filters=filters, kernel_size=kernel_size, padding="SAME", use_bias=False,
+										  trainable=training, strides=strides_curr)
+			convLayer.build(inputs.shape)
+			inputs = convLayer.call(inputs)
 
 		outputs = inputs + shortcut
-
 		### END CODE HERE
 
 		return outputs
